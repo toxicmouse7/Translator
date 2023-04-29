@@ -9,8 +9,8 @@
 
 #include <Zydis/Zydis.h>
 
-#include <Requestor.hpp>
-#include <Interfaces/IRequestHandler.hpp>
+#include <Requestor/Requestor.hpp>
+#include <Requestor/Interfaces/IRequestHandler.hpp>
 
 #include "Requests/InstructionTranslationRequest.hpp"
 #include "Requests/MovTranslationRequest.hpp"

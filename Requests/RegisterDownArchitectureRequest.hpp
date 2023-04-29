@@ -6,7 +6,7 @@
 
 #include <Zydis/Zydis.h>
 
-#include <Interfaces/IRequest.hpp>
+#include <Requestor/Interfaces/IRequest.hpp>
 
 class RegisterDownArchitectureRequest : public IRequest
 {

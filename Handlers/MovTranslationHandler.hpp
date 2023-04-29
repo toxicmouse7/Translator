@@ -8,7 +8,8 @@
 
 #include <Zydis/Zydis.h>
 
-#include "Requestor/Interfaces/IRequestHandler.hpp"
+#include <Requestor/Interfaces/IRequestHandler.hpp>
+
 #include "Requests/MovTranslationRequest.hpp"
 
 class MovTranslationHandler : public IRequestHandler<MovTranslationRequest, std::vector<ZyanU8>>

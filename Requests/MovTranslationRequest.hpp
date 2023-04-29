@@ -5,7 +5,7 @@
 #ifndef TRANSLATOR_MOVTRANSLATIONREQUEST_HPP
 #define TRANSLATOR_MOVTRANSLATIONREQUEST_HPP
 
-#include <Interfaces/IRequest.hpp>
+#include <Requestor/Interfaces/IRequest.hpp>
 
 #include "InstructionTranslationRequest.hpp"
 
