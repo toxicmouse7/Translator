@@ -6,7 +6,7 @@
 
 #include <map>
 
-#include "Requestor/Interfaces/IRequestHandler.hpp"
+#include <Interfaces/IRequestHandler.hpp>
 #include "Requests/RegisterDownArchitectureRequest.hpp"
 
 class RegisterDownArchitectureHandler : public IRequestHandler<RegisterDownArchitectureRequest, ZydisRegister>

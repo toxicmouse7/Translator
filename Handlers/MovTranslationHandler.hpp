@@ -9,12 +9,12 @@
 #include <Zydis/Zydis.h>
 
 #include "Requestor/Interfaces/IRequestHandler.hpp"
-#include "Requests/InstructionTranslationRequest.hpp"
+#include "Requests/MovTranslationRequest.hpp"
 
-class MovHandler : public IRequestHandler<InstructionTranslationRequest, std::vector<ZyanU8>>
+class MovTranslationHandler : public IRequestHandler<MovTranslationRequest, std::vector<ZyanU8>>
 {
 public:
-    std::vector<ZyanU8> Handle(const InstructionTranslationRequest& request) override
+    std::vector<ZyanU8> Handle(const MovTranslationRequest& request) override
     {
         auto& instruction = request.GetInstruction();
         ZydisEncoderRequest encoderRequest;
@@ -27,6 +27,6 @@ public:
 
         }
 
-        return std::vector<ZyanU8>();
+        return {};
     }
 };

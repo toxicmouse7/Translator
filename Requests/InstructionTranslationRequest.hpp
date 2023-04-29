@@ -6,7 +6,7 @@
 
 #include <Zydis/Zydis.h>
 
-#include "Requestor/Interfaces/IRequest.hpp"
+#include <Interfaces/IRequest.hpp>
 
 class InstructionTranslationRequest : public IRequest
 {
