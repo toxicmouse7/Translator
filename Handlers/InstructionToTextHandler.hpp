@@ -25,7 +25,7 @@ public:
         memset(&instruction, 0, sizeof(instruction));
 
         while (ZYAN_SUCCESS(ZydisDisassembleIntel(
-                /* machine_mode:    */ ZYDIS_MACHINE_MODE_LEGACY_32,
+                /* machine_mode:    */ request.GetMode(),
                 /* runtime_address: */ 0,
                 /* buffer:          */ request.GetBytes().data() + offset,
                 /* length:          */ request.GetBytes().size() - offset,
