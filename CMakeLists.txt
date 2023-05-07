@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Disable build of tools and examples.
 option(ZYDIS_BUILD_TOOLS "" OFF)
 option(ZYDIS_BUILD_EXAMPLES "" OFF)
-set(ZYAN_ZYCORE_PATH "D:\\ClionProjects\\Translator\\deps\\zydis\\dependencies\\zycore")
+#set(ZYAN_ZYCORE_PATH "D:\\ClionProjects\\Translator\\deps\\zydis\\dependencies\\zycore")
 add_subdirectory("deps/zydis")
 add_subdirectory("deps/requestor")
 
@@ -15,4 +15,6 @@ add_executable(Translator Handlers/MovTranslationHandler.hpp main.cpp Requests/I
 
 target_include_directories(Translator PUBLIC .)
 
-target_link_libraries(Translator PRIVATE "Zydis" "Requestor")
+find_package(fmt)
+
+target_link_libraries(Translator PRIVATE "Zydis" "Requestor" fmt::fmt)
