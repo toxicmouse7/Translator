@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include <ranges>
 
 #include <Zydis/Zydis.h>
 
@@ -23,6 +24,7 @@ public:
     std::vector<ZyanU8> Handle(const MovTranslationRequest& request) override
     {
         auto& requestor = Requestor::Instance();
+        auto& additionalContext = AdditionalContext::GetInstance();
         std::vector<ZyanU8> result;
 
         auto& instruction = request.GetInstruction();
@@ -46,35 +48,55 @@ public:
 
                 if (secondOperand.imm.value.u > UINT32_MAX)
                 {
-                    auto& additionalContext = AdditionalContext::GetInstance();
-
-                    auto additionalInstruction = InstructionBuilder::Builder()
-                            .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                            .Mnemonic(ZYDIS_MNEMONIC_MOV)
-                            .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                            .Mem((int32_t)(ZyanI64)&additionalContext.GetRegister(downRegister), 4)
-                            .FinishOperand()
-                            .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
-                            .Imm((int32_t)((secondOperand.imm.value.s & 0xFFFFFFFF00000000) >> 32))
-                            .FinishOperand()
-                            .Build();
-
-                    std::copy(additionalInstruction.begin(), additionalInstruction.end(),
-                              std::back_inserter(result));
+                    std::ranges::copy(InstructionBuilder::Builder()
+                                              .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                              .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                                              .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                              .Mem((int32_t)(ZyanI64)&additionalContext
+                                                      .GetRegister(downRegister), 4)
+                                              .FinishOperand()
+                                              .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                              .Imm((int32_t)((secondOperand.imm.value.s & 0xFFFFFFFF00000000) >> 32))
+                                              .FinishOperand()
+                                              .Build(), std::back_inserter(result));
                 }
             }
             else if (secondOperand.type == ZYDIS_OPERAND_TYPE_REGISTER)
             {
                 auto downSecondRegisterRequest = RegisterDownArchitectureRequest(secondOperand.reg.value);
                 auto downSecondRegister = requestor.Handle<ZydisRegister>(downSecondRegisterRequest);
+
+                std::ranges::copy(InstructionBuilder::Builder()
+                                          .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                          .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                                          .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                          .Reg(downRegister)
+                                          .FinishOperand()
+                                          .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                          .Mem((int32_t)(ZyanI64)&additionalContext
+                                                  .GetRegister(downSecondRegister), 4)
+                                          .FinishOperand()
+                                          .Build(), std::back_inserter(result));
+
+                std::ranges::copy(InstructionBuilder::Builder()
+                                          .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                          .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                                          .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                          .Mem((int32_t)(ZyanI64)&additionalContext
+                                                  .GetRegister(downRegister), 4)
+                                          .FinishOperand()
+                                          .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                          .Reg(downSecondRegister)
+                                          .FinishOperand()
+                                          .Build(), std::back_inserter(result));
+
                 builder.Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                         .Reg(downSecondRegister);
             }
         }
 
         auto mainInstruction = builder.Build();
-        std::copy(mainInstruction.begin(), mainInstruction.end(),
-                  std::back_inserter(result));
+        std::ranges::copy(mainInstruction, std::back_inserter(result));
 
         return result;
     }
