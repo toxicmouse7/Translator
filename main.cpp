@@ -18,10 +18,13 @@ int main()
         requestor.RegisterHandler<MovTranslationHandler>();
         requestor.RegisterHandler<RegisterDownArchitectureHandler>();
 
-        std::ifstream testFile("tests/test1.bin", std::ios::binary);
         std::string binaryData;
-        testFile >> binaryData;
-        testFile.close();
+
+        {
+            std::ifstream testFile("tests/test3.bin", std::ios::binary);
+            testFile >> binaryData;
+            testFile.close();
+        }
 
         int offset = 0;
         uintptr_t runtimeAddress = 0;

@@ -14,47 +14,67 @@
 #include "Requests/MovTranslationRequest.hpp"
 #include "Requests/RegisterDownArchitectureRequest.hpp"
 
+#include "AdditionalContext.hpp"
+#include "InstructionBuilder.hpp"
+
 class MovTranslationHandler : public IRequestHandler<MovTranslationRequest, std::vector<ZyanU8>>
 {
 public:
     std::vector<ZyanU8> Handle(const MovTranslationRequest& request) override
     {
         auto& requestor = Requestor::Instance();
-        std::vector<ZyanU8> result(ZYDIS_MAX_INSTRUCTION_LENGTH);
+        std::vector<ZyanU8> result;
 
         auto& instruction = request.GetInstruction();
-        ZydisEncoderRequest encoderRequest;
-        memset(&encoderRequest, 0, sizeof(encoderRequest));
-        encoderRequest.machine_mode = ZYDIS_MACHINE_MODE_LEGACY_32;
-        encoderRequest.mnemonic = ZYDIS_MNEMONIC_MOV;
-        encoderRequest.operand_count = 2;
+        auto builder = InstructionBuilder::Builder()
+                .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                .Mnemonic(ZYDIS_MNEMONIC_MOV);
 
         auto& firstOperand = instruction.operands[0];
         auto& secondOperand = instruction.operands[1];
 
         if (firstOperand.type == ZYDIS_OPERAND_TYPE_REGISTER)
         {
-            auto downRegisterRequest = RegisterDownArchitectureRequest(instruction.operands[0].reg.value);
+            auto downRegisterRequest = RegisterDownArchitectureRequest(firstOperand.reg.value);
             auto downRegister = requestor.Handle<ZydisRegister>(downRegisterRequest);
-            encoderRequest.operands[0].type = ZYDIS_OPERAND_TYPE_REGISTER;
-            encoderRequest.operands[0].reg.value = downRegister;
+            builder.Operand(ZYDIS_OPERAND_TYPE_REGISTER).Reg(downRegister);
 
             if (secondOperand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE)
             {
-                encoderRequest.operands[1].type = ZYDIS_OPERAND_TYPE_IMMEDIATE;
-                if (secondOperand.imm.value.u <= UINT32_MAX)
+                builder.Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                        .Imm((int32_t)secondOperand.imm.value.s);
+
+                if (secondOperand.imm.value.u > UINT32_MAX)
                 {
-                    encoderRequest.operands[1].imm.s = (int32_t)secondOperand.imm.value.s;
+                    auto& additionalContext = AdditionalContext::GetInstance();
+
+                    auto additionalInstruction = InstructionBuilder::Builder()
+                            .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                            .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                            .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                            .Mem((int32_t)(ZyanI64)&additionalContext.GetRegister(downRegister), 4)
+                            .FinishOperand()
+                            .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                            .Imm((int32_t)((secondOperand.imm.value.s & 0xFFFFFFFF00000000) >> 32))
+                            .FinishOperand()
+                            .Build();
+
+                    std::copy(additionalInstruction.begin(), additionalInstruction.end(),
+                              std::back_inserter(result));
                 }
+            }
+            else if (secondOperand.type == ZYDIS_OPERAND_TYPE_REGISTER)
+            {
+                auto downSecondRegisterRequest = RegisterDownArchitectureRequest(secondOperand.reg.value);
+                auto downSecondRegister = requestor.Handle<ZydisRegister>(downSecondRegisterRequest);
+                builder.Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                        .Reg(downSecondRegister);
             }
         }
 
-        ZyanUSize instructionSize = result.size();
-        auto status = ZydisEncoderEncodeInstruction(&encoderRequest, result.data(), &instructionSize);
-        if (ZYAN_FAILED(status))
-            exit(-1);
-
-        result.resize(instructionSize);
+        auto mainInstruction = builder.Build();
+        std::copy(mainInstruction.begin(), mainInstruction.end(),
+                  std::back_inserter(result));
 
         return result;
     }

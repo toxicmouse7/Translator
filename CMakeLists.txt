@@ -11,7 +11,7 @@ option(ZYDIS_BUILD_EXAMPLES "" OFF)
 add_subdirectory("deps/zydis")
 add_subdirectory("deps/requestor")
 
-add_executable(Translator Handlers/MovTranslationHandler.hpp main.cpp Requests/InstructionTranslationRequest.hpp Handlers/RegisterDownArchitectureHandler.hpp Requests/RegisterDownArchitectureRequest.hpp Handlers/InstructionTranslationHandler.hpp Requests/MovTranslationRequest.hpp Requests/InstructionToTextRequest.hpp Handlers/InstructionToTextHandler.hpp)
+add_executable(Translator Handlers/MovTranslationHandler.hpp main.cpp Requests/InstructionTranslationRequest.hpp Handlers/RegisterDownArchitectureHandler.hpp Requests/RegisterDownArchitectureRequest.hpp Handlers/InstructionTranslationHandler.hpp Requests/MovTranslationRequest.hpp Requests/InstructionToTextRequest.hpp Handlers/InstructionToTextHandler.hpp AdditionalContext.hpp InstructionBuilder.hpp)
 
 target_include_directories(Translator PUBLIC .)
 
