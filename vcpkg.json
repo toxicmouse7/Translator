@@ -1,0 +1,10 @@
+{
+  "name" : "translator",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "7f52deab66689f912da6d04de105c457d8ba671e",
+  "dependencies" : [ {
+    "name" : "fmt",
+    "version>=" : "9.1.0#1",
+    "$comment" : "    find_package(fmt CONFIG REQUIRED)\n\n    target_link_libraries(main PRIVATE fmt::fmt)\n"
+  } ]
+}

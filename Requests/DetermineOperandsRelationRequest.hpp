@@ -19,7 +19,7 @@ public:
     {
     }
 
-    const ZydisDisassembledInstruction& GetInstruction()
+    [[nodiscard]] const ZydisDisassembledInstruction& GetInstruction() const
     {
         return instruction;
     }
