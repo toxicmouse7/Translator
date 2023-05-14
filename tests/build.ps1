@@ -1,3 +1,20 @@
-jwasm -bin test1.asm && mv test1.BIN test1.bin
-jwasm -bin test2.asm && mv test2.BIN test2.bin
-jwasm -bin test3.asm && mv test3.BIN test3.bin
+../venv/Scripts/activate
+
+$test_count = 5
+
+for ($i = 1; $i -le $test_count; $i++)
+{
+    if ($args[0] -eq '--clean')
+    {
+        rm asm/test$($i).bin
+    }
+
+    jwasm -nologo -bin asm/test$($i).asm && mv test$($i).BIN asm/test$($i).bin && python generate_cpp_test.py test$($i)
+
+    if ($args[0] -eq '--clean')
+    {
+        rm asm/test$($i).bin
+    }
+}
+
+python generate_cpp_test_include.py $test_count

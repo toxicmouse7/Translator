@@ -3,6 +3,6 @@
 
 .code
 
-mov rax, 0FFFFFFFFFFFFFFFFh
+mov rax, 0EEEEEEEEFFFFFFFFh
 
 end
