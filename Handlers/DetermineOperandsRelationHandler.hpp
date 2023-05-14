@@ -49,6 +49,7 @@ public:
                 throw std::runtime_error("Invalid first argument type");
         }
 
+        throw std::runtime_error("Invalid first argument type");
     }
 };
 
