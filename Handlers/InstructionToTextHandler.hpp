@@ -5,7 +5,8 @@
 #ifndef TRANSLATOR_INSTRUCTIONTOTEXTHANDLER_HPP
 #define TRANSLATOR_INSTRUCTIONTOTEXTHANDLER_HPP
 
-#include <iostream>
+#include <string>
+#include <sstream>
 
 #include <Requestor/Interfaces/IRequestHandler.hpp>
 
@@ -14,15 +15,17 @@
 #include "Requests/InstructionToTextRequest.hpp"
 
 
-class InstructionToTextHandler : public IRequestHandler<InstructionToTextRequest, void>
+class InstructionToTextHandler : public IRequestHandler<InstructionToTextRequest, std::string>
 {
 public:
-    void Handle(const InstructionToTextRequest& request) override
+    std::string Handle(const InstructionToTextRequest& request) override
     {
         int offset = 0;
         uintptr_t runtimeAddress = 0;
         ZydisDisassembledInstruction instruction;
         memset(&instruction, 0, sizeof(instruction));
+
+        std::ostringstream ss;
 
         while (ZYAN_SUCCESS(ZydisDisassembleIntel(
                 /* machine_mode:    */ request.GetMode(),
@@ -31,10 +34,12 @@ public:
                 /* length:          */ request.GetBytes().size() - offset,
                 /* instruction:     */ &instruction
         ))) {
-            std::cout << instruction.text << std::endl;
+            ss << instruction.text << std::endl;
             offset += instruction.info.length;
             runtimeAddress += instruction.info.length;
         }
+
+        return ss.str();
     }
 };
 

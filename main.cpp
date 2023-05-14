@@ -6,6 +6,9 @@
 #include "Handlers/MovTranslationHandler.hpp"
 #include "Handlers/InstructionToTextHandler.hpp"
 #include "Handlers/RegisterDownArchitectureHandler.hpp"
+#include "Handlers/DetermineOperandsRelationHandler.hpp"
+
+#include "tests/cpp/tests.hpp"
 
 int main()
 {
@@ -17,14 +20,9 @@ int main()
         requestor.RegisterHandler<InstructionTranslationHandler>();
         requestor.RegisterHandler<MovTranslationHandler>();
         requestor.RegisterHandler<RegisterDownArchitectureHandler>();
+        requestor.RegisterHandler<DetermineOperandsRelationHandler>();
 
-        std::string binaryData;
-
-        {
-            std::ifstream testFile("tests/test3.bin", std::ios::binary);
-            testFile >> binaryData;
-            testFile.close();
-        }
+        auto& binaryData = Test5::data;
 
         int offset = 0;
         uintptr_t runtimeAddress = 0;
@@ -33,16 +31,18 @@ int main()
         while (ZYAN_SUCCESS(ZydisDisassembleIntel(
                 ZYDIS_MACHINE_MODE_LONG_64,
                 runtimeAddress,
-                binaryData.data() + offset,
-                binaryData.size() - offset,
+                binaryData + offset,
+                sizeof(binaryData) - offset,
                 &instruction)))
         {
             auto request = InstructionTranslationRequest(instruction);
 
             auto result = requestor.Handle<std::vector<ZyanU8>>(request);
 
+            std::cout << "\x1B[33m" << instruction.text << std::endl << "\x1B[31m->\033[0m" << std::endl;
             auto debugRequest = InstructionToTextRequest(result, ZYDIS_MACHINE_MODE_LEGACY_32);
-            requestor.Handle(debugRequest);
+            auto translatedInstruction = requestor.Handle<std::string>(debugRequest);
+            std::cout << "\x1B[32m" << translatedInstruction << std::endl;
 
             offset += instruction.info.length;
             runtimeAddress += instruction.info.length;
