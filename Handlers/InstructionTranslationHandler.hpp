@@ -14,6 +14,7 @@
 
 #include "Requests/InstructionTranslationRequest.hpp"
 #include "Requests/MovTranslationRequest.hpp"
+#include "Requests/LeaTranslationRequest.hpp"
 
 class InstructionTranslationHandler : public IRequestHandler<InstructionTranslationRequest, std::vector<ZyanU8>>
 {
@@ -27,6 +28,11 @@ public:
             case ZYDIS_MNEMONIC_MOV:
             {
                 auto translationRequest = MovTranslationRequest(request.GetInstruction());
+                return requestor.Handle<std::vector<ZyanU8>>(translationRequest);
+            }
+            case ZYDIS_MNEMONIC_LEA:
+            {
+                auto translationRequest = LeaTranslationRequest(request.GetInstruction());
                 return requestor.Handle<std::vector<ZyanU8>>(translationRequest);
             }
             default:

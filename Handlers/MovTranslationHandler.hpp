@@ -43,12 +43,10 @@ public:
             case OperandsRelation::Mem2Reg:
                 return MovMem2Reg(instruction);
             case OperandsRelation::Imm2Mem:
-                break;
+                return MovImm2Mem(instruction);
             default:
                 throw std::runtime_error("Not implemented yet (mov operands relation)");
         }
-
-        return {};
     }
 
     static std::vector<ZyanU8> MovReg2Reg(const ZydisDisassembledInstruction& instruction)
@@ -85,7 +83,7 @@ public:
                                           .GetRegister(firstDownRegister), 4)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
-                                  .Reg(secondDownRegister)
+                                  .Reg(firstDownRegister)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 
@@ -154,6 +152,16 @@ public:
         auto firstDownRegisterRequest = RegisterDownArchitectureRequest(firstOperand.reg.value);
         auto firstDownRegister = requestor.Handle<ZydisRegister>(firstDownRegisterRequest);
 
+        auto base = secondOperand.mem.base;
+        auto index = secondOperand.mem.index;
+        auto scale = secondOperand.mem.scale;
+
+        auto downBaseRequest = RegisterDownArchitectureRequest(base);
+        auto downIndexRequest = RegisterDownArchitectureRequest(index);
+
+        base = requestor.Handle<ZydisRegister>(downBaseRequest);
+        index = requestor.Handle<ZydisRegister>(downIndexRequest);
+
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_MOV)
@@ -161,10 +169,9 @@ public:
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((ZyanI64) (secondOperand.mem.disp.value
-                                                  + instruction.info.length
-                                                  + instruction.runtime_address
-                                                  + 4), 4)
+                                  .Mem(secondOperand.mem.disp.value + 4, 4,
+                                       base, instruction.info.length + instruction.runtime_address,
+                                       index, scale)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 
@@ -187,9 +194,9 @@ public:
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((ZyanI64) (secondOperand.mem.disp.value
-                                                  + instruction.info.length
-                                                  + instruction.runtime_address), 4)
+                                  .Mem(secondOperand.mem.disp.value, 4,
+                                       base, instruction.info.length + instruction.runtime_address,
+                                       index, scale)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 
@@ -215,6 +222,17 @@ public:
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 
+        auto base = firstOperand.mem.base;
+        auto downBaseRequest = RegisterDownArchitectureRequest(base);
+        base = requestor.Handle<ZydisRegister>(downBaseRequest);
+
+
+        auto index = firstOperand.mem.index;
+        auto downIndexRequest = RegisterDownArchitectureRequest(index);
+        index = requestor.Handle<ZydisRegister>(downIndexRequest);
+
+        auto scale = firstOperand.mem.scale;
+
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_MOV)
@@ -231,10 +249,9 @@ public:
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_MOV)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((ZyanI64) (firstOperand.mem.disp.value
-                                                  + instruction.info.length
-                                                  + instruction.runtime_address
-                                                  + 4), 4)
+                                  .Mem(firstOperand.mem.disp.value + 4, 4,
+                                       base, instruction.runtime_address + instruction.info.length,
+                                       index, scale)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(secondDownRegister)
@@ -252,13 +269,53 @@ public:
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem(firstOperand.mem.disp.value, 4,
+                                       base, instruction.runtime_address + instruction.info.length,
+                                       index, scale)
+                                  .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(secondDownRegister)
                                   .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        return result;
+    }
+
+    static std::vector<ZyanU8> MovImm2Mem(const ZydisDisassembledInstruction& instruction)
+    {
+        std::vector<ZyanU8> result;
+
+        auto& mem = instruction.operands[0].mem;
+        auto& imm = instruction.operands[1].imm;
+
+        if (imm.value.u > UINT32_MAX)
+        {
+            std::ranges::copy(InstructionBuilder::Builder()
+                                      .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                      .Mnemonic(ZYDIS_MNEMONIC_MOV)
+                                      .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                      .Mem((ZyanI64) (mem.disp.value
+                                                      + instruction.info.length
+                                                      + instruction.runtime_address
+                                                      + 4), 4)
+                                      .FinishOperand()
+                                      .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                      .Imm((int32_t) ((imm.value.s & 0xFFFFFFFF00000000) >> 32))
+                                      .FinishOperand()
+                                      .Build(), std::back_inserter(result));
+        }
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_MOV)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((ZyanI64) (firstOperand.mem.disp.value
+                                  .Mem((ZyanI64) (mem.disp.value
                                                   + instruction.info.length
                                                   + instruction.runtime_address), 4)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm((int32_t) imm.value.s)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 

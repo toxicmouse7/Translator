@@ -14,14 +14,16 @@ class RegisterDownArchitectureHandler : public IRequestHandler<RegisterDownArchi
 private:
     inline static const std::map<ZydisRegister, ZydisRegister> registersDowngradeMap =
             {
-                    {ZYDIS_REGISTER_RAX, ZYDIS_REGISTER_EAX},
-                    {ZYDIS_REGISTER_RBX, ZYDIS_REGISTER_EBX},
-                    {ZYDIS_REGISTER_RCX, ZYDIS_REGISTER_ECX},
-                    {ZYDIS_REGISTER_RDX, ZYDIS_REGISTER_EDX},
+                    {ZYDIS_REGISTER_RAX,  ZYDIS_REGISTER_EAX},
+                    {ZYDIS_REGISTER_RBX,  ZYDIS_REGISTER_EBX},
+                    {ZYDIS_REGISTER_RCX,  ZYDIS_REGISTER_ECX},
+                    {ZYDIS_REGISTER_RDX,  ZYDIS_REGISTER_EDX},
+                    {ZYDIS_REGISTER_RIP,  ZYDIS_REGISTER_RIP},
+                    {ZYDIS_REGISTER_NONE, ZYDIS_REGISTER_NONE},
             };
 public:
 
-    ZydisRegister Handle(const RegisterDownArchitectureRequest &request) override
+    ZydisRegister Handle(const RegisterDownArchitectureRequest& request) override
     {
         return registersDowngradeMap.at(request.GetRegister());
     }

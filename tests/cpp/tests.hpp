@@ -4,3 +4,8 @@
 #include "test3.hpp"
 #include "test4.hpp"
 #include "test5.hpp"
+#include "test6.hpp"
+#include "test7.hpp"
+#include "test8.hpp"
+#include "test9.hpp"
+#include "test10.hpp"
