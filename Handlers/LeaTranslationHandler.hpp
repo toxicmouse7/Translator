@@ -34,7 +34,9 @@ public:
         }
     }
 
-    std::vector<ZyanU8> LeaMem2Reg(const ZydisDisassembledInstruction& instruction)
+private:
+
+    static std::vector<ZyanU8> LeaMem2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -74,7 +76,9 @@ public:
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Ptr(0, secondOperand.ptr.offset)
+                                  .Mem(secondOperand.mem.disp.value, 4,
+                                       base, instruction.runtime_address + instruction.info.length,
+                                       index, scale)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 

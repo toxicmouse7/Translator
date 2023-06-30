@@ -8,6 +8,7 @@
 #include "Handlers/RegisterDownArchitectureHandler.hpp"
 #include "Handlers/DetermineOperandsRelationHandler.hpp"
 #include "Handlers/LeaTranslationHandler.hpp"
+#include "Handlers/AddTranslationHandler.hpp"
 
 #include "tests/cpp/tests.hpp"
 
@@ -23,8 +24,9 @@ int main()
         requestor.RegisterHandler<RegisterDownArchitectureHandler>();
         requestor.RegisterHandler<DetermineOperandsRelationHandler>();
         requestor.RegisterHandler<LeaTranslationHandler>();
+        requestor.RegisterHandler<AddTranslationHandler>();
 
-        auto& binaryData = Test10::data;
+        auto& binaryData = Test12::data;
 
         int offset = 0;
         uintptr_t runtimeAddress = 0;

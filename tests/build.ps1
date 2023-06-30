@@ -1,6 +1,6 @@
 ../venv/Scripts/activate
 
-$test_count = 10
+$test_count = 12
 
 for ($i = 1; $i -le $test_count; $i++)
 {

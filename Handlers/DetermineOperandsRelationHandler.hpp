@@ -22,8 +22,8 @@ public:
         auto& firstOperand = instruction.operands[0];
         auto& secondOperand = instruction.operands[1];
 
-        if (instruction.info.operand_count != 2)
-            throw std::runtime_error("Not implemented yet (operand count != 2)");
+        if (instruction.info.operand_count < 2)
+            throw std::runtime_error("Not implemented yet (operand count < 2)");
 
         switch (firstOperand.type)
         {

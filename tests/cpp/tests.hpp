@@ -9,3 +9,5 @@
 #include "test8.hpp"
 #include "test9.hpp"
 #include "test10.hpp"
+#include "test11.hpp"
+#include "test12.hpp"

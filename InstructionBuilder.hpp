@@ -9,7 +9,6 @@
 #include <optional>
 
 #include <Zydis/Zydis.h>
-#include <Zydis/Status.h>
 
 class InstructionBuilder
 {
@@ -44,7 +43,7 @@ public:
     {
         ZyanU8 buffer[ZYDIS_MAX_INSTRUCTION_LENGTH];
         ZyanUSize instructionSize = sizeof(buffer);
-        auto status = ZydisEncoderEncodeInstruction(&request, buffer, &instructionSize);
+        ZydisEncoderEncodeInstruction(&request, buffer, &instructionSize);
 
         return {buffer, buffer + instructionSize};
     }
@@ -108,8 +107,10 @@ public:
 
         OperandBuilder& Ptr(ZyanU32 segment, ZyanU64 offset)
         {
-            operand.ptr.offset = offset;
-            operand.ptr.segment = segment;
+            operand.mem.displacement = offset;
+            operand.mem.size = 4;
+//            operand.ptr.offset = offset;
+//            operand.ptr.segment = segment;
             return *this;
         }
 
