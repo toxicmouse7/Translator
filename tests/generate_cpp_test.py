@@ -1,8 +1,7 @@
 import sys
 
 
-def main():
-    test_name = sys.argv[1]
+def generate_test(test_name):
     test_filename = f'asm/{test_name}.bin'
     with open(test_filename, 'rb') as f:
         binary = f.read()
@@ -16,6 +15,11 @@ public:
     static constexpr unsigned char data[{len(binary)}] = {{{', '.join(f'0x{x:02x}' for x in binary)}}};
 }};
 ''')
+
+
+def main():
+    test_name = sys.argv[1]
+    generate_test(test_name)
 
 
 if __name__ == '__main__':
