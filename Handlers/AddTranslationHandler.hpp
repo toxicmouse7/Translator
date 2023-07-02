@@ -75,7 +75,7 @@ private:
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((uint32_t) (&additionalContext
+                                  .Mem((uint32_t)(uintptr_t)(&additionalContext
                                           .GetRegister(secondDownRegister)), 4)
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
@@ -84,7 +84,7 @@ private:
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_ADD)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((uint32_t) (&additionalContext
+                                  .Mem((uint32_t)(uintptr_t)(&additionalContext
                                           .GetRegister(firstDownRegister)), 4)
                                   .FinishOperand()
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
