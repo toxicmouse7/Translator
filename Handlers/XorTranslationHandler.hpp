@@ -1,24 +1,31 @@
 //
-// Created by Aleksej on 25.06.2023.
+// Created by Алексей Гладков on 04.07.2023.
 //
 
-#ifndef TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
-#define TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
+#ifndef TRANSLATOR_XORTRANSLATIONHANDLER_HPP
+#define TRANSLATOR_XORTRANSLATIONHANDLER_HPP
+
+#include <vector>
+#include <ranges>
+
+#include <Zydis/Zydis.h>
 
 #include <Requestor/Requestor.hpp>
 #include <Requestor/Interfaces/IRequestHandler.hpp>
 
-#include <vector>
-
-#include "Requests/AddTranslationRequest.hpp"
+#include "Requests/XorTranslationRequest.hpp"
 #include "Requests/RegisterDownArchitectureRequest.hpp"
 #include "Requests/DetermineOperandsRelationRequest.hpp"
+
+#include "AdditionalContext.hpp"
+#include "InstructionBuilder.hpp"
 #include "OperandsRelation.hpp"
 
-class AddTranslationHandler : public IRequestHandler<AddTranslationRequest, std::vector<ZyanU8>>
+
+class XorTranslationHandler : public IRequestHandler<XorTranslationRequest, std::vector<ZyanU8>>
 {
 public:
-    std::vector<ZyanU8> Handle(const AddTranslationRequest& request) override
+    std::vector<ZyanU8> Handle(const XorTranslationRequest& request) override
     {
         auto& requestor = Requestor::Instance();
         auto& instruction = request.GetInstruction();
@@ -29,22 +36,21 @@ public:
         switch (operandsRelation)
         {
             case OperandsRelation::Reg2Reg:
-                return AddReg2Reg(request.GetInstruction());
+                return XorReg2Reg(instruction);
             case OperandsRelation::Reg2Mem:
-                return AddReg2Mem(request.GetInstruction());
+                return XorReg2Mem(instruction);
             case OperandsRelation::Imm2Reg:
-                return AddImm2Reg(request.GetInstruction());
+                return XorImm2Reg(instruction);
             case OperandsRelation::Mem2Reg:
-                return AddMem2Reg(request.GetInstruction());
+                return XorMem2Reg(instruction);
             case OperandsRelation::Imm2Mem:
-                return AddImm2Mem(request.GetInstruction());
+                return XorImm2Mem(instruction);
             default:
-                throw std::runtime_error("Not implemented yet (add operands relation)");
+                throw std::runtime_error("Not implemented yet (xor operands relation)");
         }
     }
 
-private:
-    static std::vector<ZyanU8> AddReg2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> XorReg2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
 
@@ -81,7 +87,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem((uint32_t)(uintptr_t)(&additionalContext
                                           .GetRegister(firstDownRegister)), 4)
@@ -101,7 +107,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -113,7 +119,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddReg2Mem(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> XorReg2Mem(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -157,7 +163,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem(firstOperand.mem.disp.value + 4, 4,
                                        base, instruction.runtime_address + instruction.info.length,
@@ -178,7 +184,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem(firstOperand.mem.disp.value, 4,
                                        base, instruction.runtime_address + instruction.info.length,
@@ -192,47 +198,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddImm2Mem(const ZydisDisassembledInstruction& instruction)
-    {
-        std::vector<ZyanU8> result;
-
-        auto& mem = instruction.operands[0].mem;
-        auto& imm = instruction.operands[1].imm;
-
-        if (imm.value.u > UINT32_MAX)
-        {
-            std::ranges::copy(InstructionBuilder::Builder()
-                                      .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADD)
-                                      .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                      .Mem((ZyanI64)(mem.disp.value
-                                                     + instruction.info.length
-                                                     + instruction.runtime_address
-                                                     + 4), 4)
-                                      .FinishOperand()
-                                      .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
-                                      .Imm((int32_t)((imm.value.s & 0xFFFFFFFF00000000) >> 32))
-                                      .FinishOperand()
-                                      .Build(), std::back_inserter(result));
-        }
-
-        std::ranges::copy(InstructionBuilder::Builder()
-                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
-                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                  .Mem((ZyanI64)(mem.disp.value
-                                                 + instruction.info.length
-                                                 + instruction.runtime_address), 4)
-                                  .FinishOperand()
-                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
-                                  .Imm((int32_t)imm.value.s)
-                                  .FinishOperand()
-                                  .Build(), std::back_inserter(result));
-
-        return result;
-    }
-
-    static std::vector<ZyanU8> AddImm2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> XorImm2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -247,7 +213,7 @@ private:
         {
             std::ranges::copy(InstructionBuilder::Builder()
                                       .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                      .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                       .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                       .Mem((int32_t)(ZyanI64)&additionalContext
                                               .GetRegister(firstDownRegister), 4)
@@ -260,7 +226,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -269,25 +235,24 @@ private:
                                   .FinishOperand()
                                   .Build(), std::back_inserter(result));
 
-        if (firstDownRegister != ZYDIS_REGISTER_ESP)
-        {
-            std::ranges::copy(InstructionBuilder::Builder()
-                                      .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADC)
-                                      .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
-                                      .Mem((int32_t)(ZyanI64)&additionalContext
-                                              .GetRegister(firstDownRegister), 4)
-                                      .FinishOperand()
-                                      .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
-                                      .Imm(0)
-                                      .FinishOperand()
-                                      .Build(), std::back_inserter(result));
-        }
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem((int32_t)(ZyanI64)&additionalContext
+                                          .GetRegister(firstDownRegister), 4)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(0)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
 
         return result;
     }
 
-    static std::vector<ZyanU8> AddMem2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> XorMem2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -310,7 +275,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -344,7 +309,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADC)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem((int32_t)(ZyanI64)&additionalContext
                                           .GetRegister(firstDownRegister), 4)
@@ -364,7 +329,47 @@ private:
 
         return result;
     }
+
+    static std::vector<ZyanU8> XorImm2Mem(const ZydisDisassembledInstruction& instruction)
+    {
+        std::vector<ZyanU8> result;
+
+        auto& mem = instruction.operands[0].mem;
+        auto& imm = instruction.operands[1].imm;
+
+        if (imm.value.u > UINT32_MAX)
+        {
+            std::ranges::copy(InstructionBuilder::Builder()
+                                      .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                      .Mnemonic(ZYDIS_MNEMONIC_XOR)
+                                      .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                      .Mem((ZyanI64)(mem.disp.value
+                                                     + instruction.info.length
+                                                     + instruction.runtime_address
+                                                     + 4), 4)
+                                      .FinishOperand()
+                                      .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                      .Imm((int32_t)((imm.value.s & 0xFFFFFFFF00000000) >> 32))
+                                      .FinishOperand()
+                                      .Build(), std::back_inserter(result));
+        }
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_XOR)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem((ZyanI64)(mem.disp.value
+                                                 + instruction.info.length
+                                                 + instruction.runtime_address), 4)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm((int32_t)imm.value.s)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        return result;
+    }
 };
 
 
-#endif //TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
+#endif //TRANSLATOR_XORTRANSLATIONHANDLER_HPP

@@ -9,8 +9,13 @@
 #include "Handlers/DetermineOperandsRelationHandler.hpp"
 #include "Handlers/LeaTranslationHandler.hpp"
 #include "Handlers/AddTranslationHandler.hpp"
+#include "Handlers/CallTranslationHandler.hpp"
+#include "Handlers/SubTranslationHandler.hpp"
+#include "Handlers/XorTranslationHandler.hpp"
 
 #include "tests/cpp/tests.hpp"
+
+#include "Utils.hpp"
 
 int main()
 {
@@ -25,8 +30,11 @@ int main()
         requestor.RegisterHandler<DetermineOperandsRelationHandler>();
         requestor.RegisterHandler<LeaTranslationHandler>();
         requestor.RegisterHandler<AddTranslationHandler>();
+        requestor.RegisterHandler<CallTranslationHandler>();
+        requestor.RegisterHandler<SubTranslationHandler>();
+        requestor.RegisterHandler<XorTranslationHandler>();
 
-        auto& binaryData = Test12::data;
+        auto& binaryData = Test18::data;
 
         int offset = 0;
         uintptr_t runtimeAddress = 0;
@@ -39,14 +47,17 @@ int main()
                 sizeof(binaryData) - offset,
                 &instruction)))
         {
-            auto request = InstructionTranslationRequest(instruction);
+            std::cout << "\x1B[35m" << "[" << fmt::format("{0:#016x}", instruction.runtime_address)  << "] " << "\x1B[33m" << instruction.text << std::endl;
 
-            auto result = requestor.Handle<std::vector<ZyanU8>>(request);
-
-            std::cout << "\x1B[33m" << instruction.text << std::endl << "\x1B[31m->\033[0m" << std::endl;
-            auto debugRequest = InstructionToTextRequest(result, ZYDIS_MACHINE_MODE_LEGACY_32);
-            auto translatedInstruction = requestor.Handle<std::string>(debugRequest);
-            std::cout << "\x1B[32m" << translatedInstruction << std::endl;
+            if (Utils::IsTranslationNeed(instruction))
+            {
+                std::cout << "\x1B[31m->\033[0m" << std::endl;
+                auto request = InstructionTranslationRequest(instruction);
+                auto result = requestor.Handle<std::vector<ZyanU8>>(request);
+                auto debugRequest = InstructionToTextRequest(result, ZYDIS_MACHINE_MODE_LEGACY_32);
+                auto translatedInstruction = requestor.Handle<std::string>(debugRequest);
+                std::cout << "\x1B[32m" << translatedInstruction << std::endl;
+            }
 
             offset += instruction.info.length;
             runtimeAddress += instruction.info.length;

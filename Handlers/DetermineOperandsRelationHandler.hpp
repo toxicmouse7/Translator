@@ -22,8 +22,20 @@ public:
         auto& firstOperand = instruction.operands[0];
         auto& secondOperand = instruction.operands[1];
 
-        if (instruction.info.operand_count < 2)
-            throw std::runtime_error("Not implemented yet (operand count < 2)");
+        if (instruction.info.mnemonic == ZYDIS_MNEMONIC_CALL)
+        {
+            switch (firstOperand.type)
+            {
+                case ZYDIS_OPERAND_TYPE_REGISTER:
+                    return OperandsRelation::Reg;
+                case ZYDIS_OPERAND_TYPE_MEMORY:
+                    return OperandsRelation::Mem;
+                case ZYDIS_OPERAND_TYPE_IMMEDIATE:
+                    return OperandsRelation::Imm;
+                default:
+                    throw std::runtime_error("Invalid first argument type");
+            }
+        }
 
         switch (firstOperand.type)
         {

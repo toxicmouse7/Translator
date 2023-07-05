@@ -19,7 +19,17 @@ private:
                     {ZYDIS_REGISTER_RCX,  ZYDIS_REGISTER_ECX},
                     {ZYDIS_REGISTER_RDX,  ZYDIS_REGISTER_EDX},
                     {ZYDIS_REGISTER_RIP,  ZYDIS_REGISTER_RIP},
+                    {ZYDIS_REGISTER_RSP,  ZYDIS_REGISTER_ESP},
                     {ZYDIS_REGISTER_NONE, ZYDIS_REGISTER_NONE},
+                    {ZYDIS_REGISTER_R8, ZYDIS_REGISTER_R8D},
+                    {ZYDIS_REGISTER_R8D, ZYDIS_REGISTER_R8D},
+                    {ZYDIS_REGISTER_R9, ZYDIS_REGISTER_R9D},
+                    {ZYDIS_REGISTER_R9D, ZYDIS_REGISTER_R9D},
+                    {ZYDIS_REGISTER_EAX, ZYDIS_REGISTER_EAX},
+                    {ZYDIS_REGISTER_EBX, ZYDIS_REGISTER_EBX},
+                    {ZYDIS_REGISTER_ECX, ZYDIS_REGISTER_ECX},
+                    {ZYDIS_REGISTER_EDX, ZYDIS_REGISTER_EDX},
+                    {ZYDIS_REGISTER_ESP, ZYDIS_REGISTER_ESP}
             };
 public:
 

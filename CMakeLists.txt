@@ -11,7 +11,7 @@ option(ZYDIS_BUILD_EXAMPLES "" OFF)
 add_subdirectory("deps/zydis")
 add_subdirectory("deps/requestor")
 
-add_executable(Translator Handlers/MovTranslationHandler.hpp main.cpp Requests/InstructionTranslationRequest.hpp Handlers/RegisterDownArchitectureHandler.hpp Requests/RegisterDownArchitectureRequest.hpp Handlers/InstructionTranslationHandler.hpp Requests/MovTranslationRequest.hpp Requests/InstructionToTextRequest.hpp Handlers/InstructionToTextHandler.hpp AdditionalContext.hpp InstructionBuilder.hpp OperandsRelation.hpp Requests/DetermineOperandsRelationRequest.hpp Handlers/DetermineOperandsRelationHandler.hpp Requests/LeaTranslationRequest.hpp Handlers/LeaTranslationHandler.hpp Handlers/LeaTranslationHandler.hpp Requests/AddTranslationRequest.hpp Handlers/AddTranslationHandler.hpp)
+add_executable(Translator Handlers/MovTranslationHandler.hpp main.cpp Requests/InstructionTranslationRequest.hpp Handlers/RegisterDownArchitectureHandler.hpp Requests/RegisterDownArchitectureRequest.hpp Handlers/InstructionTranslationHandler.hpp Requests/MovTranslationRequest.hpp Requests/InstructionToTextRequest.hpp Handlers/InstructionToTextHandler.hpp AdditionalContext.hpp InstructionBuilder.hpp OperandsRelation.hpp Requests/DetermineOperandsRelationRequest.hpp Handlers/DetermineOperandsRelationHandler.hpp Requests/LeaTranslationRequest.hpp Handlers/LeaTranslationHandler.hpp Handlers/LeaTranslationHandler.hpp Requests/AddTranslationRequest.hpp Handlers/AddTranslationHandler.hpp Requests/CallTranslationRequest.hpp Handlers/CallTranslationHandler.hpp Handlers/SubTranslationHandler.hpp Requests/SubTranslationRequest.hpp Utils.hpp Requests/XorTranslationRequest.hpp Handlers/XorTranslationHandler.hpp)
 
 target_include_directories(Translator PUBLIC .)
 

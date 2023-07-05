@@ -1,0 +1,7 @@
+#pragma once
+
+class Test19
+{
+public:
+    static constexpr unsigned char data[7] = {0x49, 0xc7, 0xc0, 0xff, 0xff, 0xff, 0xff};
+};

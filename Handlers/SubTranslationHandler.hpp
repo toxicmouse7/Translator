@@ -2,23 +2,25 @@
 // Created by Aleksej on 25.06.2023.
 //
 
-#ifndef TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
-#define TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
+#ifndef TRANSLATOR_SUBTRANSLATIONHANDLER_HPP
+#define TRANSLATOR_SUBTRANSLATIONHANDLER_HPP
 
 #include <Requestor/Requestor.hpp>
 #include <Requestor/Interfaces/IRequestHandler.hpp>
 
 #include <vector>
 
-#include "Requests/AddTranslationRequest.hpp"
+#include "Requests/SubTranslationRequest.hpp"
 #include "Requests/RegisterDownArchitectureRequest.hpp"
 #include "Requests/DetermineOperandsRelationRequest.hpp"
 #include "OperandsRelation.hpp"
+#include "AdditionalContext.hpp"
+#include "InstructionBuilder.hpp"
 
-class AddTranslationHandler : public IRequestHandler<AddTranslationRequest, std::vector<ZyanU8>>
+class SubTranslationHandler : public IRequestHandler<SubTranslationRequest, std::vector<ZyanU8>>
 {
 public:
-    std::vector<ZyanU8> Handle(const AddTranslationRequest& request) override
+    std::vector<ZyanU8> Handle(const SubTranslationRequest& request) override
     {
         auto& requestor = Requestor::Instance();
         auto& instruction = request.GetInstruction();
@@ -29,22 +31,22 @@ public:
         switch (operandsRelation)
         {
             case OperandsRelation::Reg2Reg:
-                return AddReg2Reg(request.GetInstruction());
+                return SubReg2Reg(request.GetInstruction());
             case OperandsRelation::Reg2Mem:
-                return AddReg2Mem(request.GetInstruction());
+                return SubReg2Mem(request.GetInstruction());
             case OperandsRelation::Imm2Reg:
-                return AddImm2Reg(request.GetInstruction());
+                return SubImm2Reg(request.GetInstruction());
             case OperandsRelation::Mem2Reg:
-                return AddMem2Reg(request.GetInstruction());
+                return SubMem2Reg(request.GetInstruction());
             case OperandsRelation::Imm2Mem:
-                return AddImm2Mem(request.GetInstruction());
+                return SubImm2Mem(request.GetInstruction());
             default:
-                throw std::runtime_error("Not implemented yet (add operands relation)");
+                throw std::runtime_error("Not implemented yet (sub operands relation)");
         }
     }
 
 private:
-    static std::vector<ZyanU8> AddReg2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> SubReg2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
 
@@ -81,7 +83,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem((uint32_t)(uintptr_t)(&additionalContext
                                           .GetRegister(firstDownRegister)), 4)
@@ -101,7 +103,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -113,7 +115,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddReg2Mem(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> SubReg2Mem(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -157,7 +159,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem(firstOperand.mem.disp.value + 4, 4,
                                        base, instruction.runtime_address + instruction.info.length,
@@ -178,7 +180,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem(firstOperand.mem.disp.value, 4,
                                        base, instruction.runtime_address + instruction.info.length,
@@ -192,7 +194,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddImm2Mem(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> SubImm2Mem(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
 
@@ -203,7 +205,7 @@ private:
         {
             std::ranges::copy(InstructionBuilder::Builder()
                                       .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                      .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                       .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                       .Mem((ZyanI64)(mem.disp.value
                                                      + instruction.info.length
@@ -218,7 +220,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem((ZyanI64)(mem.disp.value
                                                  + instruction.info.length
@@ -232,7 +234,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddImm2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> SubImm2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -247,7 +249,7 @@ private:
         {
             std::ranges::copy(InstructionBuilder::Builder()
                                       .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                      .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                       .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                       .Mem((int32_t)(ZyanI64)&additionalContext
                                               .GetRegister(firstDownRegister), 4)
@@ -260,7 +262,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -273,7 +275,7 @@ private:
         {
             std::ranges::copy(InstructionBuilder::Builder()
                                       .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                      .Mnemonic(ZYDIS_MNEMONIC_ADC)
+                                      .Mnemonic(ZYDIS_MNEMONIC_SBB)
                                       .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                       .Mem((int32_t)(ZyanI64)&additionalContext
                                               .GetRegister(firstDownRegister), 4)
@@ -287,7 +289,7 @@ private:
         return result;
     }
 
-    static std::vector<ZyanU8> AddMem2Reg(const ZydisDisassembledInstruction& instruction)
+    static std::vector<ZyanU8> SubMem2Reg(const ZydisDisassembledInstruction& instruction)
     {
         std::vector<ZyanU8> result;
         auto& requestor = Requestor::Instance();
@@ -310,7 +312,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SUB)
                                   .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
                                   .Reg(firstDownRegister)
                                   .FinishOperand()
@@ -344,7 +346,7 @@ private:
 
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
-                                  .Mnemonic(ZYDIS_MNEMONIC_ADC)
+                                  .Mnemonic(ZYDIS_MNEMONIC_SBB)
                                   .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
                                   .Mem((int32_t)(ZyanI64)&additionalContext
                                           .GetRegister(firstDownRegister), 4)
@@ -367,4 +369,4 @@ private:
 };
 
 
-#endif //TRANSLATOR_ADDTRANSLATIONHANDLER_HPP
+#endif //TRANSLATOR_SUBTRANSLATIONHANDLER_HPP

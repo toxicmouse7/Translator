@@ -12,7 +12,10 @@ enum class OperandsRelation
     Reg2Mem,
     Imm2Reg,
     Mem2Reg,
-    Imm2Mem
+    Imm2Mem,
+    Reg,
+    Mem,
+    Imm
 };
 
 
