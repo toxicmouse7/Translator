@@ -19,13 +19,21 @@ private:
     uint32_t highEcx;
     uint32_t highEdx;
 
+    uint32_t r8d;
+    uint32_t r8;
+
+    uint32_t r9d;
+    uint32_t r9;
+
     std::map<ZydisRegister, uint32_t&> regRefs {
             {ZYDIS_REGISTER_EAX, highEax},
             {ZYDIS_REGISTER_EBX, highEbx},
             {ZYDIS_REGISTER_ECX, highEcx},
             {ZYDIS_REGISTER_EDX, highEdx},
-            {ZYDIS_REGISTER_R8D, r8.r8d},
-            {ZYDIS_REGISTER_R9D, r9.r9d}
+            {ZYDIS_REGISTER_R8D, r8d},
+            {ZYDIS_REGISTER_R9D, r9d},
+            {ZYDIS_REGISTER_R8, r8},
+            {ZYDIS_REGISTER_R9, r9},
     };
 public:
 
@@ -41,20 +49,6 @@ public:
     {
         return regRefs.at(reg);
     }
-
-    union {
-        uint64_t r8;
-        uint32_t r8d;
-        uint16_t r8w;
-        uint8_t r8b;
-    } r8;
-
-    union {
-        uint64_t r9;
-        uint32_t r9d;
-        uint16_t r9w;
-        uint8_t r9b;
-    } r9;
 };
 
 

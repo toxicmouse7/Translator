@@ -12,9 +12,11 @@
 #include "Requests/InstructionToTextRequest.hpp"
 
 Function64::Function64(std::byte* entryPoint)
+        : functionAddress((uint32_t) entryPoint)
 {
     FillAdjacencyList(entryPoint);
     FillInstructionsFromAdjacencyList();
+    FindRelativeFunctionsCalls();
 }
 
 std::shared_ptr<std::list<uint64_t>> Function64::GetAddressesOfReturn()
@@ -184,9 +186,9 @@ std::vector<ZyanU8> Function64::TranslateToX86()
     auto& requestor = Requestor::Instance();
     std::vector<ZyanU8> function86;
 
-    for (auto& instructionPlacement : *instructions)
+    for (auto& instructionPlacement: *instructions)
     {
-        for (auto& instruction : instructionPlacement.second)
+        for (auto& instruction: instructionPlacement.second)
         {
             auto request = InstructionTranslationRequest(instruction);
             auto result = requestor.Handle<std::vector<ZyanU8>>(request);
@@ -199,4 +201,30 @@ std::vector<ZyanU8> Function64::TranslateToX86()
     }
 
     return function86;
+}
+
+void Function64::FindRelativeFunctionsCalls()
+{
+    functionCalls = std::make_shared<std::map<uint32_t, uint32_t>>();
+    if (instructions->size() > 1)
+        throw std::runtime_error("Not implemented yet");
+
+    for (auto& instructionPlacement: *instructions)
+    {
+        for (auto& instruction: instructionPlacement.second)
+        {
+            if (instruction.info.mnemonic != ZYDIS_MNEMONIC_CALL)
+                continue;
+
+            if (instruction.operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                (*functionCalls)[(uint32_t) instruction.runtime_address] =
+                        (uint32_t) (instruction.runtime_address + instruction.operands[0].imm.value.u +
+                                    instruction.info.length);
+        }
+    }
+}
+
+const std::shared_ptr<std::map<uint32_t, uint32_t>>& Function64::GetRelativeFunctionCalls()
+{
+    return functionCalls;
 }

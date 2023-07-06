@@ -4,9 +4,12 @@
 
 #include "PE64Processing.hpp"
 #include "Function/Function64.hpp"
+#include "Function/Function32.hpp"
 
 #include <fstream>
 #include <winnt.h>
+#include <functional>
+#include <algorithm>
 
 PE64Processing::PE64Processing(const std::string& fileName)
 {
@@ -101,17 +104,64 @@ void PE64Processing::LoadPE(const std::string& fileName)
 
 int PE64Processing::ExecuteX86()
 {
-    typedef int (*entryFunctionProto)();
-
+    typedef int (* entryFunctionProto)();
+    std::vector<std::shared_ptr<Function64>> functions;
     auto* entryPoint = ntHeaders->OptionalHeader.AddressOfEntryPoint + peBuffer.data();
-    auto entryFunctionObject = new Function64(reinterpret_cast<std::byte*>(entryPoint));
+    auto* executionBufferEntryPoint = (char*)nullptr;
     auto executionBuffer = VirtualAlloc(nullptr, alignedSectionSizes.front(),
                                         MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-    auto translationResult = entryFunctionObject->TranslateToX86();
-    memcpy(executionBuffer, translationResult.data(), translationResult.size());
+    auto entryFunctionObject = std::make_shared<Function64>(reinterpret_cast<std::byte*>(entryPoint));
+    functions.push_back(entryFunctionObject);
 
-    auto entryFunction = (entryFunctionProto)executionBuffer;
+    std::function<void(const std::shared_ptr<Function64>&)> recursivelyFindFunctions =
+            [&functions, &recursivelyFindFunctions](const std::shared_ptr<Function64>& function)
+            {
+                auto functionCalls = function->GetRelativeFunctionCalls();
+                for (const auto& functionCall: *functionCalls)
+                {
+                    if (std::ranges::find_if(functions, [functionCall](const auto& f)
+                    {
+                        return functionCall.second == f->functionAddress;
+                    }) != functions.end())
+                        continue;
+
+                    auto foundFunction = std::make_shared<Function64>((std::byte*) functionCall.second);
+                    functions.push_back(foundFunction);
+                    recursivelyFindFunctions(function);
+                }
+            };
+
+    recursivelyFindFunctions(entryFunctionObject);
+
+    std::ranges::sort(functions,
+                      [](const auto& f1, const auto& f2)
+                      {
+                          return f1->functionAddress < f2->functionAddress;
+                      });
+
+    uint32_t offset = 0;
+    std::map<uint32_t, uint32_t> relations;
+    std::vector<std::shared_ptr<Function32>> translatedFunctions;
+    for (const auto& function: functions)
+    {
+        auto translationResult = function->TranslateToX86();
+        memcpy((char*) executionBuffer + offset, translationResult.data(), translationResult.size());
+        auto newFunctionAddress = (char*) executionBuffer + offset;
+        relations[function->functionAddress] = (uint32_t) newFunctionAddress;
+        if (function == entryFunctionObject)
+            executionBufferEntryPoint = newFunctionAddress;
+
+        translatedFunctions.push_back(std::make_shared<Function32>((std::byte*) newFunctionAddress, function));
+        offset += translationResult.size();
+    }
+
+    for (auto& translatedFunction: translatedFunctions)
+    {
+        translatedFunction->SynchronizeCalls(relations);
+    }
+
+    auto entryFunction = (entryFunctionProto) executionBufferEntryPoint;
     auto result = entryFunction();
     VirtualFree(executionBuffer, 0, MEM_RELEASE);
 
