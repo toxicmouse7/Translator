@@ -12,61 +12,27 @@
 #include "Handlers/CallTranslationHandler.hpp"
 #include "Handlers/SubTranslationHandler.hpp"
 #include "Handlers/XorTranslationHandler.hpp"
+#include "Handlers/RetTranslationHandler.hpp"
 
-#include "tests/cpp/tests.hpp"
-
-#include "Utils.hpp"
+#include "PE64Processing.hpp"
 
 int main()
 {
     auto& requestor = Requestor::Instance();
+    requestor.RegisterHandler<InstructionToTextHandler>();
+    requestor.RegisterHandler<InstructionTranslationHandler>();
+    requestor.RegisterHandler<MovTranslationHandler>();
+    requestor.RegisterHandler<RegisterDownArchitectureHandler>();
+    requestor.RegisterHandler<DetermineOperandsRelationHandler>();
+    requestor.RegisterHandler<LeaTranslationHandler>();
+    requestor.RegisterHandler<AddTranslationHandler>();
+    requestor.RegisterHandler<CallTranslationHandler>();
+    requestor.RegisterHandler<SubTranslationHandler>();
+    requestor.RegisterHandler<XorTranslationHandler>();
+    requestor.RegisterHandler<RetTranslationHandler>();
 
-    try
-    {
-        requestor.RegisterHandler<InstructionToTextHandler>();
-        requestor.RegisterHandler<InstructionTranslationHandler>();
-        requestor.RegisterHandler<MovTranslationHandler>();
-        requestor.RegisterHandler<RegisterDownArchitectureHandler>();
-        requestor.RegisterHandler<DetermineOperandsRelationHandler>();
-        requestor.RegisterHandler<LeaTranslationHandler>();
-        requestor.RegisterHandler<AddTranslationHandler>();
-        requestor.RegisterHandler<CallTranslationHandler>();
-        requestor.RegisterHandler<SubTranslationHandler>();
-        requestor.RegisterHandler<XorTranslationHandler>();
-
-        auto& binaryData = Test18::data;
-
-        int offset = 0;
-        uintptr_t runtimeAddress = 0;
-        ZydisDisassembledInstruction instruction;
-        memset(&instruction, 0, sizeof(instruction));
-        while (ZYAN_SUCCESS(ZydisDisassembleIntel(
-                ZYDIS_MACHINE_MODE_LONG_64,
-                runtimeAddress,
-                binaryData + offset,
-                sizeof(binaryData) - offset,
-                &instruction)))
-        {
-            std::cout << "\x1B[35m" << "[" << fmt::format("{0:#016x}", instruction.runtime_address)  << "] " << "\x1B[33m" << instruction.text << std::endl;
-
-            if (Utils::IsTranslationNeed(instruction))
-            {
-                std::cout << "\x1B[31m->\033[0m" << std::endl;
-                auto request = InstructionTranslationRequest(instruction);
-                auto result = requestor.Handle<std::vector<ZyanU8>>(request);
-                auto debugRequest = InstructionToTextRequest(result, ZYDIS_MACHINE_MODE_LEGACY_32);
-                auto translatedInstruction = requestor.Handle<std::string>(debugRequest);
-                std::cout << "\x1B[32m" << translatedInstruction << std::endl;
-            }
-
-            offset += instruction.info.length;
-            runtimeAddress += instruction.info.length;
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cout << e.what() << std::endl;
-    }
+    auto peProcessing = new PE64Processing("D:\\ClionProjects\\Translator\\tests\\C\\test1.exe");
+    auto retCode = peProcessing->ExecuteX86();
 
     return 0;
 }

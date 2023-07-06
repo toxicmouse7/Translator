@@ -19,6 +19,7 @@
 #include "Requests/CallTranslationRequest.hpp"
 #include "Requests/SubTranslationRequest.hpp"
 #include "Requests/XorTranslationRequest.hpp"
+#include "Requests/RetTranslationRequest.hpp"
 
 class InstructionTranslationHandler : public IRequestHandler<InstructionTranslationRequest, std::vector<ZyanU8>>
 {
@@ -57,6 +58,11 @@ public:
             case ZYDIS_MNEMONIC_CALL:
             {
                 auto translationRequest = CallTranslationRequest(request.GetInstruction());
+                return requestor.Handle<std::vector<ZyanU8>>(translationRequest);
+            }
+            case ZYDIS_MNEMONIC_RET:
+            {
+                auto translationRequest = RetTranslationRequest(request.GetInstruction());
                 return requestor.Handle<std::vector<ZyanU8>>(translationRequest);
             }
             default:

@@ -32,7 +32,7 @@ public:
         {
             case OperandsRelation::Reg:
             case OperandsRelation::Mem:
-                throw std::runtime_error("Incompatible operand types (call)");
+                return CallMem(request.GetInstruction());
             case OperandsRelation::Imm:
                 return CallImm(request.GetInstruction());
             default:
@@ -152,6 +152,131 @@ public:
          * m2:
          * add esp, 4
          */
+
+        return result;
+    }
+
+    static std::vector<ZyanU8> CallMem(const ZydisDisassembledInstruction& instruction)
+    {
+        std::vector<ZyanU8> result;
+        auto additionalContext = AdditionalContext::GetInstance();
+        auto& requestor = Requestor::Instance();
+        auto& firstOperand = instruction.operands[0];
+
+        auto base = firstOperand.mem.base;
+        auto downBaseRequest = RegisterDownArchitectureRequest(base);
+        base = requestor.Handle<ZydisRegister>(downBaseRequest);
+
+
+        auto index = firstOperand.mem.index;
+        auto downIndexRequest = RegisterDownArchitectureRequest(index);
+        index = requestor.Handle<ZydisRegister>(downIndexRequest);
+
+        auto scale = firstOperand.mem.scale;
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_PUSH)
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(signature)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_PUSH)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem((int32_t)(uintptr_t)&additionalContext
+                                          .GetRegister(ZYDIS_REGISTER_R9D), 4)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_PUSH)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem((int32_t)(uintptr_t)&additionalContext
+                                          .GetRegister(ZYDIS_REGISTER_R8D), 4)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_PUSH)
+                                  .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                  .Reg(ZYDIS_REGISTER_EDX)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_PUSH)
+                                  .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                  .Reg(ZYDIS_REGISTER_ECX)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        ZyanI64 offset = 0;
+        if (base == ZYDIS_REGISTER_ESP)
+            offset += 5 * 4; // 4 пуша по 4 байта
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_CALL)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem(firstOperand.mem.disp.value + offset, 4,
+                                       base, instruction.runtime_address + instruction.info.length,
+                                       index, scale)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_CMP)
+                                  .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+                                  .Mem(0, 4, ZYDIS_REGISTER_ESP)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(signature)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_JZ)
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(5)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                  .Reg(ZYDIS_REGISTER_ESP)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(4)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_JMP)
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(-14)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
+
+        std::ranges::copy(InstructionBuilder::Builder()
+                                  .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+                                  .Mnemonic(ZYDIS_MNEMONIC_ADD)
+                                  .Operand(ZYDIS_OPERAND_TYPE_REGISTER)
+                                  .Reg(ZYDIS_REGISTER_ESP)
+                                  .FinishOperand()
+                                  .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+                                  .Imm(4)
+                                  .FinishOperand()
+                                  .Build(), std::back_inserter(result));
 
         return result;
     }

@@ -65,6 +65,22 @@ public:
         auto firstDownRegister = requestor.Handle<ZydisRegister>(firstDownRegisterRequest);
         auto secondDownRegister = requestor.Handle<ZydisRegister>(secondDownRegisterRequest);
 
+        if (firstDownRegister == secondDownRegister && (firstDownRegister == ZYDIS_REGISTER_R9D || firstDownRegister == ZYDIS_REGISTER_R8D))
+        {
+            std::ranges::copy(InstructionBuilder::Builder()
+            .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
+            .Mnemonic(ZYDIS_MNEMONIC_MOV)
+            .Operand(ZYDIS_OPERAND_TYPE_MEMORY)
+            .Mem((uint32_t)&additionalContext.GetRegister(firstDownRegister), 4)
+            .FinishOperand()
+            .Operand(ZYDIS_OPERAND_TYPE_IMMEDIATE)
+            .Imm(0)
+            .FinishOperand()
+            .Build(), std::back_inserter(result));
+
+            return result;
+        }
+
         std::ranges::copy(InstructionBuilder::Builder()
                                   .Mode(ZYDIS_MACHINE_MODE_LEGACY_32)
                                   .Mnemonic(ZYDIS_MNEMONIC_PUSH)
