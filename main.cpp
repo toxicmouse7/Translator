@@ -31,7 +31,7 @@ int main()
     requestor.RegisterHandler<XorTranslationHandler>();
     requestor.RegisterHandler<RetTranslationHandler>();
 
-    auto peProcessing = new PE64Processing("D:\\ClionProjects\\Translator\\tests\\C\\test3.exe");
+    auto peProcessing = new PE64Processing("D:\\ClionProjects\\Translator\\tests\\C\\test5.exe");
     auto retCode = peProcessing->ExecuteX86();
 
     return 0;

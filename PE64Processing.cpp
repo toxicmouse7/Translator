@@ -25,6 +25,8 @@ void PE64Processing::LoadImportTable()
                                           .DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
 
     auto countOfEntries = importTableDirectory.Size / sizeof(IMAGE_IMPORT_DESCRIPTOR);
+    if (countOfEntries == 0)
+        return;
 
     auto* importTable = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
             peBuffer.data() + importTableDirectory.VirtualAddress);
@@ -108,7 +110,7 @@ int PE64Processing::ExecuteX86()
     std::vector<std::shared_ptr<Function64>> functions;
     auto* entryPoint = ntHeaders->OptionalHeader.AddressOfEntryPoint + peBuffer.data();
     auto* executionBufferEntryPoint = (char*)nullptr;
-    auto executionBuffer = VirtualAlloc(nullptr, alignedSectionSizes.front(),
+    executionBuffer = VirtualAlloc(nullptr, alignedSectionSizes.front(),
                                         MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
     auto entryFunctionObject = std::make_shared<Function64>(reinterpret_cast<std::byte*>(entryPoint));
@@ -140,8 +142,7 @@ int PE64Processing::ExecuteX86()
                           return f1->functionAddress < f2->functionAddress;
                       });
 
-    uint32_t offset = 0;
-    std::map<uint32_t, uint32_t> relations;
+    offset = 0;
     std::vector<std::shared_ptr<Function32>> translatedFunctions;
     for (const auto& function: functions)
     {
@@ -159,6 +160,7 @@ int PE64Processing::ExecuteX86()
     for (auto& translatedFunction: translatedFunctions)
     {
         translatedFunction->SynchronizeCalls(relations);
+        translatedFunction->SynchronizeAddressLoads(relations);
     }
 
     auto entryFunction = (entryFunctionProto) executionBufferEntryPoint;

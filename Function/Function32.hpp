@@ -34,6 +34,7 @@ public:
     explicit Function32(std::byte* entryPoint, const std::shared_ptr<Function64>& parentFunction);
 
     void SynchronizeCalls(const std::map<uint32_t, uint32_t>& relations);
+    void SynchronizeAddressLoads(const std::map<uint32_t, uint32_t>& relations);
 };
 
 

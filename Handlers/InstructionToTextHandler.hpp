@@ -34,7 +34,7 @@ public:
                 /* length:          */ request.GetBytes().size() - offset,
                 /* instruction:     */ &instruction
         ))) {
-            ss << instruction.text << std::endl;
+            ss << instruction.text << " - " << (uint32_t)instruction.info.length << std::endl;
             offset += instruction.info.length;
             runtimeAddress += instruction.info.length;
         }
